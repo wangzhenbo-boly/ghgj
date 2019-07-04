@@ -88,6 +88,7 @@ ON_BN_CLICKED(IDC_BUTTON5, &CMFCApplication1Dlg::OnBnClickedButton5)
 ON_BN_CLICKED(IDC_BUTTON6, &CMFCApplication1Dlg::OnBnClickedButton6)
 ON_BN_CLICKED(IDC_BUTTON7, &CMFCApplication1Dlg::OnBnClickedButton7)
 ON_BN_CLICKED(IDC_BUTTON8, &CMFCApplication1Dlg::OnBnClickedButton8)
+ON_BN_CLICKED(IDC_BUTTON9, &CMFCApplication1Dlg::OnBnClickedButton9)
 END_MESSAGE_MAP()
 
 
@@ -468,6 +469,7 @@ UINT __cdecl CMFCApplication1Dlg::ThreadFun(LPVOID pParam)
 	CMFCApplication1Dlg *dlg = (CMFCApplication1Dlg *)pParam;
 	while (true)
 	{
+		Sleep(10);
 		dlg->UseFun();//类中要调用的函数
 	}
 }
@@ -475,6 +477,7 @@ UINT __cdecl CMFCApplication1Dlg::ThreadFun(LPVOID pParam)
 void CMFCApplication1Dlg::UseFun()
 {
 	//ADD YOUR CODE
+	//下单函数
 	if (Send_Flag&State_Comm)
 	{
 		SYSTEMTIME st;
@@ -524,5 +527,71 @@ void CMFCApplication1Dlg::UseFun()
 		{
 			MessageBox(_T("串口未打开!"));
 		}
+	}
+	//点餐机点单函数
+	if (Order_Flag&State_Comm)
+	{
+		SYSTEMTIME st;
+		UINT32 COMMAND_NUMBER = 0;
+		static UINT32 COMMAND_LAGE_NUMBER = 1;
+		CString  strTime;
+		static CString SHOW_TEXT;
+		DWORD wCount = 0;
+		UINT8 cont = 6;
+		CString r, s, t;
+		GetDlgItem(IDC_EDIT2)->GetWindowText(r);
+		GetDlgItem(IDC_EDIT1)->GetWindowText(s);
+		GetDlgItem(IDC_COMBO2)->GetWindowText(t);
+		unsigned char p[100];
+		p[0] = 0x5a;
+		p[1] = 0xa5;
+		p[2] = 0x01;
+		p[3] = 0x01;
+		p[4] = (_ttoi(r)*10) / 256;
+		p[5] = (_ttoi(r)*10) % 256;
+		COMMAND_NUMBER = COMMAND_LAGE_NUMBER++ * 100;
+		for (UINT16 i = 1; i <= _ttoi(r); i++)
+		{
+			
+			p[cont++] = ((COMMAND_NUMBER  + i)>>18 )&0XFF;
+			p[cont++] = ((COMMAND_NUMBER  + i) >>16)&0XFF;
+			p[cont++] = ((COMMAND_NUMBER + i)>>8 )&0XFF;
+			p[cont++] = ((COMMAND_NUMBER + i) )%256;
+			p[cont++] = _ttoi(s) / 256;
+			p[cont++] = _ttoi(s) % 256;
+			p[cont++] = Value_button;
+			p[cont++] = 2;//主料号
+			p[cont++] = 0x01;
+			p[cont++] = 0x1e;
+		}
+		p[cont++] = checkCRC_16->Check_CRC_16(p, cont-1) / 256;
+		p[cont++] = checkCRC_16->Check_CRC_16(p, cont-2) % 256;
+		if (State_Comm)
+		{
+			
+				WriteFile(hCom, p, cont, &wCount, NULL);
+				Order_Flag = 0;
+				
+		}
+		else
+		{
+			MessageBox(_T("串口未打开!"));
+		}
+	}
+		
+	
+}
+
+
+void CMFCApplication1Dlg::OnBnClickedButton9()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if (State_Comm)
+	{
+		Order_Flag = 1;		
+	}
+	else
+	{
+		MessageBox(_T("串口未打开！"));
 	}
 }

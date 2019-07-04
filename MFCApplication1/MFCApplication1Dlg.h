@@ -62,4 +62,6 @@ public:
 	static UINT __cdecl ThreadFun(LPVOID pParam);//传入线程函数
 	void UseFun();//实现功能函数
 	bool Send_Flag = 0;
+	bool Order_Flag = 0;
+	afx_msg void OnBnClickedButton9();
 };
